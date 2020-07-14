@@ -16,6 +16,8 @@ rn.seed(1)
 session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)
 import keras
 from keras import backend as K
+
+
 tf.set_random_seed(0)
 sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
 K.set_session(sess)
@@ -36,7 +38,7 @@ from keras.layers import Conv1D, GlobalMaxPooling1D, MaxPooling1D
 from keras.layers.normalization import BatchNormalization
 from keras.layers import Conv2D, GRU
 from keras.layers import Input, Embedding, LSTM, Dense, TimeDistributed, Masking, RepeatVector, merge, Flatten
-from keras.models import Model
+from keras.models import Model, load_model
 from keras.utils import plot_model
 from keras.layers import Bidirectional
 from keras.callbacks import ModelCheckpoint, EarlyStopping
@@ -140,6 +142,7 @@ def build_combined_categorical(FLAGS, NUM_FILTERS, FILTER_LENGTH1, FILTER_LENGTH
     interactionModel.compile(optimizer='adam', loss='mean_squared_error', metrics=[cindex_score]) #, metrics=['cindex_score']
     print(interactionModel.summary())
     plot_model(interactionModel, to_file='figures/build_combined_categorical.png')
+
 
     return interactionModel
 
@@ -347,6 +350,10 @@ def general_nfold_cv(XD, XT,  Y, label_row_inds, label_col_inds, prfmeasure, run
 
         val_drugs, val_prots,  val_Y = prepare_interaction_pairs(XD, XT,  Y, terows, tecols)
 
+        # define the checkpoint
+        model_filepath = "data/davis/mymodel.h5"
+        checkpoint = ModelCheckpoint(model_filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
+
 
         pointer = 0
        
@@ -361,8 +368,14 @@ def general_nfold_cv(XD, XT,  Y, label_row_inds, label_col_inds, prfmeasure, run
                     gridmodel = runmethod(FLAGS, param1value, param2value, param3value)
                     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=15)
                     gridres = gridmodel.fit(([np.array(train_drugs),np.array(train_prots) ]), np.array(train_Y), batch_size=batchsz, epochs=epoch, 
-                            validation_data=( ([np.array(val_drugs), np.array(val_prots) ]), np.array(val_Y)),  shuffle=False, callbacks=[es] ) 
+                            validation_data=( ([np.array(val_drugs), np.array(val_prots) ]), np.array(val_Y)),  shuffle=False, callbacks=[es, checkpoint])
 
+                    #load it back
+                    dependencies = {
+                        'cindex_score': cindex_score
+                    }
+
+                    model_latest_checkpoint = load_model(model_filepath, custom_objects=dependencies)
 
                     predicted_labels = gridmodel.predict([np.array(val_drugs), np.array(val_prots) ])
                     loss, rperf2 = gridmodel.evaluate(([np.array(val_drugs),np.array(val_prots) ]), np.array(val_Y), verbose=0)

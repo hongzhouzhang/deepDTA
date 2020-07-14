@@ -5,6 +5,7 @@ import json
 import pickle
 import collections
 from collections import OrderedDict
+import os
 from matplotlib.pyplot import cm
 #from keras.preprocessing.sequence import pad_sequences
 
@@ -130,8 +131,8 @@ class DataSet(object):
     setting_no = FLAGS.problem_type
     print("Reading %s start" % fpath)
 
-    test_fold = json.load(open(fpath + "folds/test_fold_setting" + str(setting_no)+".txt"))
-    train_folds = json.load(open(fpath + "folds/train_fold_setting" + str(setting_no)+".txt"))
+    test_fold = json.load(open(os.path.join(fpath,"folds/test_fold_setting") + str(setting_no)+".txt"))
+    train_folds = json.load(open(os.path.join(fpath, "folds/train_fold_setting") + str(setting_no)+".txt"))
     
     return test_fold, train_folds
 
@@ -139,10 +140,10 @@ class DataSet(object):
     fpath = FLAGS.dataset_path	
     print("Read %s start" % fpath)
 
-    ligands = json.load(open(fpath+"ligands_can.txt"), object_pairs_hook=OrderedDict)
-    proteins = json.load(open(fpath+"proteins.txt"), object_pairs_hook=OrderedDict)
+    ligands =  json.load(open(os.path.join(fpath, "ligands_can.txt")), object_pairs_hook=OrderedDict)
+    proteins = json.load(open(os.path.join(fpath, "proteins.txt")), object_pairs_hook=OrderedDict)
 
-    Y = pickle.load(open(fpath + "Y","rb"), encoding='latin1') ### TODO: read from raw
+    Y = pickle.load(open(os.path.join(fpath, "Y"),"rb"), encoding='latin1') ### TODO: read from raw
     if FLAGS.is_log:
         Y = -(np.log10(Y/(math.pow(10,9))))
 

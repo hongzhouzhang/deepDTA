@@ -37,7 +37,9 @@ python run_experiments.py --num_windows 32 \
 
 ```
 
-
+have to switch keras backend to tensorflow
+cd ~/.keras/
+vi keras.json
 
 
 
